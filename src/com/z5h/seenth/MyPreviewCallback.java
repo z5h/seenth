@@ -40,10 +40,8 @@ public class MyPreviewCallback implements Camera.PreviewCallback {
 
                         int index = mWidth * j + i;
 
-                        r = (rgba[index] & 0xff000000) >> 24;
-                        g = (rgba[index] & 0xff0000) >> 16;
-                        b = (rgba[index] & 0xff00) >> 8;
-                        sb.append((char)b);
+                        b = (rgba[index] & 0xff) ;
+                        sb.append(b>100 ? ' ' : '#');
 
                     }
                     sb.append('\n');
@@ -67,14 +65,13 @@ public class MyPreviewCallback implements Camera.PreviewCallback {
 
     }
 
-    static public void decodeYUV420SP(int[] rgba, byte[] yuv420sp, int width,
-                                      int height) {
+    static void decodeYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {
+
         final int frameSize = width * height;
 
-        for (int j = 0, yp = 0; j < height; j++) {
-            int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
+        for (int j = 0, yp = 0; j < height; j++) {       int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
             for (int i = 0; i < width; i++, yp++) {
-                int y = (0xff & ((int)yuv420sp[yp])) - 16;
+                int y = (0xff & ((int) yuv420sp[yp])) - 16;
                 if (y < 0)
                     y = 0;
                 if ((i & 1) == 0) {
@@ -100,8 +97,7 @@ public class MyPreviewCallback implements Camera.PreviewCallback {
                 else if (b > 262143)
                     b = 262143;
 
-                rgba[yp] = ((r << 14) & 0xff000000) | ((g << 6) & 0xff0000)
-                        | ((b >> 2) | 0xff00);
+                rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
             }
         }
     }
