@@ -1,135 +1,110 @@
 package com.z5h.seenth;
 
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
-import android.util.Log;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
+import android.net.rtp.AudioStream;
 
 public class MyPreviewCallback implements Camera.PreviewCallback {
-    long lastLog = 0;
+
+    private int width;
+    private int height;
+    private final byte[] buffer;
+    private byte[] yValues;
+
+    private int debugFrame = 0;
+    private int frameCount;
+
+    AudioTrack audioTrack;
+
+    public MyPreviewCallback(Camera camera) {
+        Camera.Parameters parameters = camera.getParameters();
+        Camera.Size size = parameters.getPreviewSize();
+        Debugger.print("preview size = " + size.width + "," + size.height);
+        width = size.width;
+        height = size.height;
+
+
+        yValues = new byte[width*height];
+
+        int format = parameters.getPreviewFormat();
+        if (format!=ImageFormat.NV21){
+            throw new IllegalArgumentException("Camera's preview mode must be NV21");
+        }
+
+        buffer = new byte[(ImageFormat.getBitsPerPixel(format)*width*height)/8];
+        camera.addCallbackBuffer(buffer);
+
+        debugNthFrame(true, 10);
+    }
+
+    void foo(){
+
+        double freq = 440.0;
+        int sampleRateInHz = 8000;
+
+        if (audioTrack!=null){
+            audioTrack.pause();
+            audioTrack.flush();
+        } else {
+            audioTrack =
+                new AudioTrack(AudioManager.STREAM_MUSIC,
+                    sampleRateInHz,
+                    AudioFormat.CHANNEL_OUT_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT,
+                    1 * sampleRateInHz,
+                    AudioTrack.MODE_STREAM);
+        }
+
+        byte[] sound = new byte[8000];
+        for (int i=0; i<sound.length; i++){
+            sound[i] = yValues[ ((int)(width * i /(sampleRateInHz/freq))) % yValues.length] ;
+        }
+
+        audioTrack.write(sound,0,sound.length);
+
+        audioTrack.play();
+    }
+
+    public void debugNthFrame(boolean debug, int n){
+        if (debug){
+            debugFrame = n;
+            frameCount=0;
+        } else {
+            debugFrame = 0;
+        }
+    }
 
     public void onPreviewFrame(byte[] data, Camera camera) {
-
-
-        Debugger.print("#######################");
-        camera.getParameters().getPreviewSize();
-        Debugger.print("1");
-        if (data != null) {
-
-            Debugger.print("2");
-            // Preprocessing
-            Camera.Parameters mParameters = camera.getParameters();
-            Camera.Size mSize = mParameters.getPreviewSize();
-            int mWidth = mSize.width;
-            int mHeight = mSize.height;
-            int[] rgba = new int[mWidth * mHeight];
-
-            // Decode Yuv data to integer array
-            decodeYUV420SP(rgba, data, mWidth, mHeight);
-            Debugger.print("3");
-
-            int r, g, b, y, u, v;
-
-            if (lastLog == 0) {
-                lastLog = System.currentTimeMillis();
+        for (int h=0; h<height; h++){
+            for (int w=0; w<width; w++){
+                int index = h*width + w;
+                yValues[index] = data[index];
             }
+        }
+        foo();
+        if (debugFrame>0){
+            frameCount++;
+            if (frameCount==debugFrame){
+                frameCount=0;
+                StringBuilder sb = new StringBuilder();
+                char[] colors = new char[]{'#', '%',':','.',' ',' '};
 
-            if (System.currentTimeMillis() - lastLog > 5000) {
+                    for (int h=0; h<height; h+=2){
+                        for (int w=0; w<width; w+=2){
 
-                StringBuilder sb = new StringBuilder(mWidth*mHeight);
-                for (int j = 0; j < mHeight; j++) {
-                    for (int i = 0; i < mWidth; i++) {
-
-                        int index = mWidth * j + i;
-
-                        b = (rgba[index] & 0xff) ;
-                        sb.append(b>100 ? ' ' : '#');
-
+                        int index = h*width + w;
+                        char color = colors[((yValues[index]&0xff)*5)/0xff];
+                        sb.append(color);
                     }
-                    sb.append('\n');
-                }
-                Debugger.print(sb.toString());
-                lastLog = System.currentTimeMillis();
-            }
-
-            Debugger.print("4");
-            // Converting int mIntArray to Bitmap and
-            // than image preprocessing
-            // and back to mIntArray.
-
-            // Encode intArray to Yuv data
-            try {
-//                encodeYUV420SP(data, rgba, mWidth, mHeight);
-            } catch (Exception e) {
-                Debugger.print("AAAA", e);
-            }
-        }
-
-    }
-
-    static void decodeYUV420SP(int[] rgb, byte[] yuv420sp, int width, int height) {
-
-        final int frameSize = width * height;
-
-        for (int j = 0, yp = 0; j < height; j++) {       int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
-            for (int i = 0; i < width; i++, yp++) {
-                int y = (0xff & ((int) yuv420sp[yp])) - 16;
-                if (y < 0)
-                    y = 0;
-                if ((i & 1) == 0) {
-                    v = (0xff & yuv420sp[uvp++]) - 128;
-                    u = (0xff & yuv420sp[uvp++]) - 128;
+                    Debugger.print(sb.toString());
+                    sb = new StringBuilder();
                 }
 
-                int y1192 = 1192 * y;
-                int r = (y1192 + 1634 * v);
-                int g = (y1192 - 833 * v - 400 * u);
-                int b = (y1192 + 2066 * u);
-
-                if (r < 0)
-                    r = 0;
-                else if (r > 262143)
-                    r = 262143;
-                if (g < 0)
-                    g = 0;
-                else if (g > 262143)
-                    g = 262143;
-                if (b < 0)
-                    b = 0;
-                else if (b > 262143)
-                    b = 262143;
-
-                rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
             }
         }
     }
 
-
-    static public void encodeYUV420SP(byte[] yuv420sp, int[] rgba,
-                                      int width, int height) {
-        final int frameSize = width * height;
-
-        int[] U, V;
-        U = new int[frameSize];
-        V = new int[frameSize];
-
-        int r, g, b, y, u, v;
-        for (int j = 0; j < height; j++) {
-            int index = width * j;
-            for (int i = 0; i < width; i++) {
-                r = (rgba[index] & 0xff000000) >> 24;
-                g = (rgba[index] & 0xff0000) >> 16;
-                b = (rgba[index] & 0xff00) >> 8;
-
-                // rgb to yuv
-                y = (66 * r + 129 * g + 25 * b + 128) >> 8 + 16;
-                u = (-38 * r - 74 * g + 112 * b + 128) >> 8 + 128;
-                v = (112 * r - 94 * g - 18 * b + 128) >> 8 + 128;
-
-                // clip y
-                yuv420sp[index++] = (byte)((y < 0) ? 0 : ((y > 255) ? 255 : y));
-                U[index] = u;
-                V[index++] = v;
-            }
-        }
-
-    }
 }

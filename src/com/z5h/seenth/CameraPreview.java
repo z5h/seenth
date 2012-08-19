@@ -9,13 +9,6 @@ import android.view.SurfaceView;
 
 import java.io.IOException;
 
-/**
- * Created with IntelliJ IDEA.
- * User: markb
- * Date: 12-08-18
- * Time: 1:23 PM
- * To change this template use File | Settings | File Templates.
- */
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder mHolder;
     private Camera mCamera;
@@ -36,7 +29,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, now tell the camera where to draw the preview.
         try {
-            Debugger.print("OBV I'M FUCKING HERE");
+
             mCamera.setPreviewDisplay(holder);
             mCamera.startPreview();
 
@@ -44,20 +37,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
 
 
-            MyPreviewCallback previewCallback = new MyPreviewCallback();
-            Debugger.print("made callback");
-
-            Camera.Parameters mParameters = mCamera.getParameters();
-            Camera.Size mSize = mParameters.getPreviewSize();
-            int mWidth = mSize.width;
-            int mHeight = mSize.height;
-            int format = mParameters.getPreviewFormat();
-            byte[] data = new byte[(ImageFormat.getBitsPerPixel(format)/8)*mWidth*mHeight];
-
-            Debugger.print("data size is " + data.length);
-            mCamera.addCallbackBuffer(data);
+            MyPreviewCallback previewCallback = new MyPreviewCallback(mCamera);
             mCamera.setPreviewCallback(previewCallback);
-            Debugger.print("set fucking callback");
+
+
 
         } catch (IOException e) {
             Log.d("surfaceCreated", "Error setting camera preview: " + e.getMessage());
@@ -90,24 +73,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         // start preview with new settings
         try {
 
-            Debugger.print("OH SHIT");
+
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
 
-            MyPreviewCallback previewCallback = new MyPreviewCallback();
-            Debugger.print("made callback");
-
-            Camera.Parameters mParameters = mCamera.getParameters();
-            Camera.Size mSize = mParameters.getPreviewSize();
-            int mWidth = mSize.width;
-            int mHeight = mSize.height;
-             format = mParameters.getPreviewFormat();
-            byte[] data = new byte[(ImageFormat.getBitsPerPixel(format)/8)*mWidth*mHeight];
-
-            Debugger.print("data size is " + data.length);
-            mCamera.addCallbackBuffer(data);
+            MyPreviewCallback previewCallback = new MyPreviewCallback(mCamera);
             mCamera.setPreviewCallback(previewCallback);
-            Debugger.print("set fucking callback");
+
 
 
         } catch (Exception e){

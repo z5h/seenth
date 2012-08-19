@@ -37,7 +37,7 @@ public class Main extends Activity {
 
         camera = Camera.open();
         Debugger.print("set preview");
-        camera.getParameters().setPreviewFormat(ImageFormat.YV12);
+        camera.getParameters().setPreviewFormat(ImageFormat.NV21);
         setCameraDisplayOrientation(this, 0, camera);
         Debugger.print("set orientation");
 
