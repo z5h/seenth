@@ -18,8 +18,10 @@ public class MyPreviewCallback implements Camera.PreviewCallback {
     private int frameCount;
 
     AudioTrack audioTrack;
+    CameraPreview cameraPreview;
 
-    public MyPreviewCallback(Camera camera) {
+    public MyPreviewCallback(Camera camera, CameraPreview cameraPreview) {
+        this.cameraPreview = cameraPreview;
         Camera.Parameters parameters = camera.getParameters();
         Camera.Size size = parameters.getPreviewSize();
         Debugger.print("preview size = " + size.width + "," + size.height);
@@ -42,7 +44,7 @@ public class MyPreviewCallback implements Camera.PreviewCallback {
 
     void foo(){
 
-        double freq = 440.0;
+        double freq = 4400.0 * cameraPreview.lastX;
         int sampleRateInHz = 8000;
 
         if (audioTrack!=null){
@@ -60,7 +62,7 @@ public class MyPreviewCallback implements Camera.PreviewCallback {
 
         byte[] sound = new byte[8000];
         for (int i=0; i<sound.length; i++){
-            sound[i] = yValues[ ((int)(width * i /(sampleRateInHz/freq))) % yValues.length] ;
+            sound[i] = (byte)(cameraPreview.lastY*yValues[ ((int)(width * i /(sampleRateInHz/freq))) % yValues.length]);
         }
 
         audioTrack.write(sound,0,sound.length);

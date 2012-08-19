@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
@@ -12,6 +13,9 @@ import java.io.IOException;
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder mHolder;
     private Camera mCamera;
+
+    public double lastX = 0.0;
+    public double lastY = 0.0;
 
     public CameraPreview(Context context, Camera camera) {
         super(context);
@@ -26,6 +30,15 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 //        mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+
+        lastX = event.getX()/getWidth();
+        lastY = event.getY()/getHeight();
+
+        return super.onTouchEvent(event);    //To change body of overridden methods use File | Settings | File Templates.
+    }
+
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, now tell the camera where to draw the preview.
         try {
@@ -37,7 +50,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
 
 
-            MyPreviewCallback previewCallback = new MyPreviewCallback(mCamera);
+            MyPreviewCallback previewCallback = new MyPreviewCallback(mCamera, this);
             mCamera.setPreviewCallback(previewCallback);
 
 
@@ -77,7 +90,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
 
-            MyPreviewCallback previewCallback = new MyPreviewCallback(mCamera);
+            MyPreviewCallback previewCallback = new MyPreviewCallback(mCamera, this);
             mCamera.setPreviewCallback(previewCallback);
 
 

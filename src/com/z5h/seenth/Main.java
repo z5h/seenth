@@ -47,6 +47,8 @@ public class Main extends Activity {
         preview.addView(mPreview);
 
 
+
+
         camera.startPreview();
 
 
